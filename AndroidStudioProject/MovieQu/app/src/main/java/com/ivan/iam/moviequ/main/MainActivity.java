@@ -1,5 +1,6 @@
 package com.ivan.iam.moviequ.main;
 
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
@@ -18,8 +19,9 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
     private RecyclerView rView;
+    private SwipeRefreshLayout mRefreshLayout;
     private List<MainDao> mData  = new ArrayList<>();
     private MainAdapter adapter;
 
@@ -36,23 +38,10 @@ public class MainActivity extends AppCompatActivity {
         rView.setAdapter(adapter);
         rView.setLayoutManager(gridLayoutManager);
 
-        ApiClient.service().getMovieList("92a6ad79021577c42954d9838ff0bdc1")
-                .enqueue(new Callback<MovieResponseDao>() {
-                    @Override
-                    public void onResponse(Call<MovieResponseDao> call, Response<MovieResponseDao> response) {
-                        if (response.isSuccessful()) {
-                            for (MovieResponseDao.MovieData data : response.body().getResults()) {
-                                mData.add(new MainDao(data.getTitle(),"http://image.tmdb.org/t/p/w185"+data.getPoster_path()));
-                            }
-                            adapter.notifyDataSetChanged();
-                        }
-                    }
+        mRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipeMain);
+        mRefreshLayout.setOnRefreshListener(this);
 
-                    @Override
-                    public void onFailure(Call<MovieResponseDao> call, Throwable t) {
-                        Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+        getDataMovie();
 
 //        new Handler().postDelayed(new Runnable() {
 //            @Override
@@ -66,9 +55,36 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        }, 5000);
 
-
         Toast.makeText(this, "Loading 5 detik....", Toast.LENGTH_SHORT).show();
     }
 
+    private void getDataMovie(){
+        mRefreshLayout.setRefreshing(true);
+        ApiClient.service().getMovieList("92a6ad79021577c42954d9838ff0bdc1")
+                .enqueue(new Callback<MovieResponseDao>() {
+                    @Override
+                    public void onResponse(Call<MovieResponseDao> call, Response<MovieResponseDao> response) {
+                        if (response.isSuccessful()) {
+                            mRefreshLayout.setRefreshing(false);
+                            for (MovieResponseDao.MovieData data : response.body().getResults()) {
+                                mData.add(new MainDao(data.getTitle(), data.getOverview(), "http://image.tmdb.org/t/p/w185"+data.getBackdrop_path(), "http://image.tmdb.org/t/p/w185"+data.getPoster_path(), data.getRelease_date()));
+                            }
+                            adapter.notifyDataSetChanged();
+                        }else {
+                            mRefreshLayout.setRefreshing(false);
+                            Toast.makeText(MainActivity.this, "Internal Server error...", Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
+                    @Override
+                    public void onFailure(Call<MovieResponseDao> call, Throwable t) {
+                        mRefreshLayout.setRefreshing(false);
+                        Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+    @Override
+    public void onRefresh() {
+        getDataMovie();
+    }
 }

@@ -1,5 +1,6 @@
 package com.ivan.iam.moviequ.main;
 
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ivan.iam.moviequ.R;
+import com.ivan.iam.moviequ.main.detail.DetailActivity;
 import com.squareup.picasso.Picasso;
 
 import java.util.List;
@@ -41,7 +43,9 @@ public class MainAdapter extends RecyclerView.Adapter<MainAdapter.MainHolder> {
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(view.getContext(), mData.get(position).getTitle(), Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(view.getContext(), DetailActivity.class);
+                intent.putExtra("dataMovie",mData.get(position));
+                view.getContext().startActivity(intent);
             }
         });
     }
